@@ -13,6 +13,8 @@ appcompat = "1.6.1"
 material = "1.10.0"
 jgrapht = "1.5.2"
 jts = "1.20.0"
+gson = "2.9.0"
+constraintlayout = "2.2.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -34,6 +36,8 @@ material = { group = "com.google.android.material", name = "material", version.r
 amp = { group = "com.amap.api", name = "3dmap", version.ref = "amp" }
 jgrapht = { group = "org.jgrapht", name = "jgrapht-core", version.ref = "jgrapht" }
 jts = { group = "org.locationtech.jts", name = "jts-core", version.ref = "jts" }
+gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
+androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
