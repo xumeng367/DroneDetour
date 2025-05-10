@@ -21,12 +21,11 @@ import com.amap.api.maps.model.BitmapDescriptorFactory
 import com.amap.api.maps.model.LatLng
 import com.amap.api.maps.model.Marker
 import com.amap.api.maps.model.MarkerOptions
-import com.amap.api.maps.model.Polygon
 import com.amap.api.maps.model.PolygonOptions
 import com.amap.api.maps.model.Polyline
 import com.amap.api.maps.model.PolylineOptions
+import com.dronesky.detour.DetourGoHomeManager
 import com.dronesky.detour.GeoUtils
-import com.dronesky.detour.GraphUtils
 import com.dronesky.detour.MapUtils
 import com.dronesky.detour.MyLatLng
 import com.dronesky.dronedetour.utils.MainHandler
@@ -77,7 +76,7 @@ class MainActivity : ComponentActivity() {
     private var mFlyPathLine: Polyline? = null;
 
     //禁飞区集合
-    private var listBanAreas: ArrayList<ArrayList<MyLatLng>> = ArrayList()
+    private var listBanAreas: MutableList<MutableList<MyLatLng>> = ArrayList()
 
     //电子围栏
     private var fenceList: ArrayList<MyLatLng> = ArrayList()
@@ -141,6 +140,7 @@ class MainActivity : ComponentActivity() {
             fencePoints.clear()
             fenceList.clear()
             flypathPoints.clear()
+            listBanAreas.clear()
             aMap?.clear()
             SpUtil.putString("fence_list_str", "")
             SpUtil.putString("ban_list_str", "")
@@ -204,30 +204,55 @@ class MainActivity : ComponentActivity() {
 
         generateKeyPoint.setOnClickListener {
 
+            Log.d(TAG, "路径规划开始")
 
             Thread {
                 val type = 4
                 var listLatLng: ArrayList<MyLatLng> = ArrayList()
-                if (type == 4) {
-                    val noFlyZones: MutableList<Polygon> = java.util.ArrayList()
-                    Log.d(TAG, "listBanAreas = " + listBanAreas.size)
+              if (type == 4) {
+                  DetourGoHomeManager.getsInstance().updateNoFlyZones(listBanAreas)
+                    val startTime = System.currentTimeMillis()
+
+                  val path = DetourGoHomeManager.getsInstance().calculateDetourPath(listOf(startPoint,endPoint))
+                    val endTime = System.currentTimeMillis()
+                    val costTime = (endTime - startTime)
+                  Log.d(TAG, "结束 costTime =  $costTime")
+                    if (path == null || path.isEmpty()) {
+                        Log.d(TAG, "无可行路径")
+                        ToastUtils.showToast("无可行路径:耗时：$costTime")
+                    } else {
+                        Log.d(TAG, "原始路径:")
+                        flypathPoints.forEach {
+                            Log.d(TAG, "起点纬度: " + it.latitude + ", 经度: " + it.longitude)
+
+                        }
+                        Log.d(TAG, "最短绕飞路径:")
+                        Log.d(TAG, "起点纬度: " + startPoint.latitude + ", 经度: " + startPoint.longitude)
+                        Log.d(TAG, "终点纬度: " + endPoint.latitude + ", 经度: " + endPoint.longitude)
+                        for (point in path) {
+                            Log.d(TAG, "纬度: " + point.latitude + ", 经度: " + point.longitude)
+                        }
+                        ToastUtils.showToast("找到路径，耗时：$costTime")
+                        listLatLng.addAll(path)
+                    }
+
                 }
 
+                val distance = GeoUtils.haversine(startPoint.latitude, startPoint.longitude, endPoint.latitude, endPoint.longitude)
+                Log.d(TAG, "开始结束距离：" + distance)
+                if (listLatLng.isEmpty()) {
+                    Log.d(TAG, "未找到路径")
+                } else {
+                    MainHandler.post({
+                        drawPathOnAMap(aMap!!, listLatLng)
+                        ToastUtils.showToast("路径规划完成！");
+                        Log.d(TAG, "路径规划完成！");
+
+                    }, 0)
+                }
+
+
             }.start()
-
-            /* val keyPoints = planner.planKeyPoints(startPoint, endPoint)
-             if (keyPoints.isNullOrEmpty()) {
-                   Log.d(TAG, "DDDDDDDDDDDD----->无法找到有效路径")
-             } else {
-                   Log.d(TAG, "DDDDDDDDDDDD----->找到关键点路径 ")
-                 var listLatLng: ArrayList<LatLng> = ArrayList()
-
-                 keyPoints.forEach {
-                       Log.d(TAG, "Lat: ${it.latitude}, Lng: ${it.longitude}")
-                     listLatLng.add(LatLng(it.latitude, it.longitude))
-                 }
-                 drawPathOnAMap(aMap!!, listLatLng)
-             }*/
         }
 
         checkAndRequestPermissions()
@@ -414,7 +439,7 @@ class MainActivity : ComponentActivity() {
      */
     override fun onRequestPermissionsResult(
         requestCode: Int,
-        permissions: Array<String?>,
+        permissions: Array<String>,
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
@@ -440,7 +465,7 @@ class MainActivity : ComponentActivity() {
 
     }
 
-    private fun drawBanPolygon(points: ArrayList<MyLatLng>) {
+    private fun drawBanPolygon(points: MutableList<MyLatLng>) {
         Log.d(TAG, "drawBanPolygon " + points.joinToString())
         val newPoints = points.map { toLatLon(it) }
         val polygonOptions = PolygonOptions()

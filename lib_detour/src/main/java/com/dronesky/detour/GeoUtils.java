@@ -11,7 +11,6 @@ import java.util.List;
 public class GeoUtils {
     private static final String TAG = "GeoUtils";
     private static final GeometryFactory geometryFactory = new GeometryFactory();
-
     // 生成 Polygon（禁飞区）
     public static Polygon createPolygon(List<MyLatLng> coordinates) {
         Coordinate[] coords = new Coordinate[coordinates.size() + 1];

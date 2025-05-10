@@ -34,7 +34,7 @@ public class KeyPointExtractor {
                 // 获取 Polygon 的边界
                 keyPoints.addAll(getBufferedPolygonBoundaryPoints(zone, bufferMeters));
             } else {
-                 Log.d(TAG,"Intersect 和禁飞区不相交，不处理");
+                 Log.d(TAG,"Intersect 和禁飞区不相交，不处理" + zone);
             }
         }
         return keyPoints;

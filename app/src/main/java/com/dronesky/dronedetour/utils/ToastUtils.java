@@ -15,7 +15,12 @@ public final class ToastUtils {
      * 单纯吐司
      **/
     public static void showToast(final String str) {
-      Toast.makeText(ContextHolder.applicationContext(), str, Toast.LENGTH_LONG).show();
+        MainHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(ContextHolder.applicationContext(), str, Toast.LENGTH_LONG).show();
+            }
+        }, 0);
     }
 
 }

@@ -28,8 +28,8 @@ public class GraphUtils {
             for (int i = 0; i < waypoints.size() - 1; i++) {
                 MyLatLng start = waypoints.get(i);
                 MyLatLng end = waypoints.get(i + 1);
-                Log.d(TAG, "遍历" + i);
                 boolean intersectsNoFlyZone = GeoUtils.intersectsNoFlyZone(start, end, noFlyZones);
+                Log.d(TAG, "遍历" + i + ", intersectsNoFlyZone = " + intersectsNoFlyZone);
                 if (!intersectsNoFlyZone) {
                     if (!fullPath.isEmpty()) {
                         MyLatLng last = fullPath.get(fullPath.size() - 1);
