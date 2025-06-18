@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">DroneDetour</string>
+    <string name="generate_path">Generate Path</string>
+    <string name="set_noflyzone">Set NoFlyZone</string>
+    <string name="set_fence">set fence</string>
+    <string name="set_end_point">End Point</string>
+    <string name="set_start_point">Start Point</string>
+    <string name="clear">clear</string>
 </resources>

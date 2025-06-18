@@ -1,6 +1,5 @@
 package com.dronesky.dronedetour
 
-import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Bundle
@@ -43,8 +42,15 @@ fun toLatLon(myLatLon: MyLatLng): LatLng {
     return LatLng(myLatLon.latitude, myLatLon.longitude)
 }
 
-class MainActivity : ComponentActivity() {
+/**
+ * for map drawing
+ */
+enum class MapMode {
+    FENCE, NOFLYZONE, STARTPOINT, ENDPOINT,
+}
 
+class MainActivity : ComponentActivity() {
+    private var TAG = "MainActivity"
     private lateinit var mapView: MapView
     private var aMap: AMap? = null
     private val missingPermission: ArrayList<String> = ArrayList()
@@ -56,39 +62,31 @@ class MainActivity : ComponentActivity() {
     private lateinit var buttonCreateEndPoint: Button
     private lateinit var setBanAreaButton: Button
     private lateinit var generateKeyPoint: Button
-    private lateinit var btn_set_point: Button
     private lateinit var btn_cancel_set_point: Button
     private lateinit var btn_set_fence_point: Button
 
-    //禁飞区
-    private var banPointList = ArrayList<MyLatLng>()
-
-    //电子围栏
+    private var noFlyZoneList = ArrayList<MyLatLng>()
     private var fencePoints = ArrayList<MyLatLng>()
     private var isPointStartStatus = false;
     private var isPointEndStatus = false;
     private lateinit var et_type: Spinner
-    private var selectedType = "电子围栏"
-    private var TAG = "ObcaleActivity"
+    private var selectedType = MapMode.FENCE
     private var startMarker: Marker? = null
     private var endMarker: Marker? = null
     private var mPathPolyline: Polyline? = null;
-    private var mFlyPathLine: Polyline? = null;
 
-    //禁飞区集合
+    //no fly zones
     private var listBanAreas: MutableList<MutableList<MyLatLng>> = ArrayList()
 
-    //电子围栏
+    //fence
     private var fenceList: ArrayList<MyLatLng> = ArrayList()
 
     private var flypathPoints = ArrayList<MyLatLng>()
 
-    @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        //高德地图隐私合规
         MapsInitializer.updatePrivacyShow(this, true, true)
         MapsInitializer.updatePrivacyAgree(this, true)
 
@@ -99,30 +97,24 @@ class MainActivity : ComponentActivity() {
         buttonCreateEndPoint = findViewById(R.id.btn_set_end_point)
         setBanAreaButton = findViewById(R.id.btn_set_avoid_point)
         generateKeyPoint = findViewById(R.id.btn_set_key_points)
-        btn_set_point = findViewById(R.id.btn_set_point)
         btn_cancel_set_point = findViewById(R.id.btn_cancel_set_point)
         btn_set_fence_point = findViewById(R.id.btn_set_fence_point)
         et_type = findViewById(R.id.spinner_type)
-        // 定义下拉数据
-        val types = arrayOf("电子围栏", "禁飞区", "起始点", "终点", "航线模式")
-        // 创建适配器
+        //modeList
+        val types = arrayOf(
+//            MapMode.FENCE.name,
+            MapMode.NOFLYZONE.name,
+            MapMode.STARTPOINT.name,
+            MapMode.ENDPOINT.name
+        )
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, types)
-        // 设置下拉样式
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        // 绑定适配器
         et_type.adapter = adapter
-        // 监听选中事件
         et_type.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(
-                parent: AdapterView<*>,
-                view: View,
-                position: Int,
-                id: Long
+                parent: AdapterView<*>, view: View, position: Int, id: Long
             ) {
-                selectedType = types[position] // 获取选中的值
-                if (selectedType == "航线模式") {
-                    flypathPoints.clear()
-                }
+                selectedType = MapMode.valueOf(types[position])
             }
 
             override fun onNothingSelected(parent: AdapterView<*>) {
@@ -130,13 +122,9 @@ class MainActivity : ComponentActivity() {
         }
 
 
-
-        btn_set_point.setOnClickListener {
-            isCreatePointStatus = true
-        }
         btn_cancel_set_point.setOnClickListener {
             isCreatePointStatus = false
-            banPointList.clear()
+            noFlyZoneList.clear()
             fencePoints.clear()
             fenceList.clear()
             flypathPoints.clear()
@@ -149,13 +137,9 @@ class MainActivity : ComponentActivity() {
 
         setBanAreaButton.setOnClickListener {
 
-            // 绘制禁飞区域
-            drawBanPolygon(banPointList)
-            // 创建 banPointList 的副本并添加到 listBanAreas
-            listBanAreas.add(ArrayList(banPointList))  // 创建副本
-            // 清空 banPointList，以便重新使用
-            banPointList.clear()
-            //持久化数据
+            drawBanPolygon(noFlyZoneList)
+            listBanAreas.add(ArrayList(noFlyZoneList))  // 创建副本
+            noFlyZoneList.clear()
             val gson = Gson()
             val banJson = gson.toJson(listBanAreas)
             Log.d(TAG, "banJson = " + banJson)
@@ -169,17 +153,12 @@ class MainActivity : ComponentActivity() {
             }
             SpUtil.putString("ban_list_str", banJson)
 
-            Log.d(TAG, "DDDDDDDDDDDDDDDD------PPPPlistBanAreas:${listBanAreas.size}")
         }
 
         generateKeyPoint.setOnClickListener {
-            drawBanPolygon(banPointList)
-//            listBanAreas.add(banPointList)
-//            banPointList.clear()
-
+            drawBanPolygon(noFlyZoneList)
         }
         btn_set_fence_point.setOnClickListener {
-            //持久化数据
             val gson = Gson()
             val fenceJson = gson.toJson(fenceList)
             Log.d(TAG, "fenceJson = " + fenceJson)
@@ -204,49 +183,36 @@ class MainActivity : ComponentActivity() {
 
         generateKeyPoint.setOnClickListener {
 
-            Log.d(TAG, "路径规划开始")
+            Log.d(TAG, "start calculate detour path")
 
             Thread {
-                val type = 4
-                var listLatLng: ArrayList<MyLatLng> = ArrayList()
-              if (type == 4) {
-                  DetourGoHomeManager.getsInstance().updateNoFlyZones(listBanAreas)
-                    val startTime = System.currentTimeMillis()
+                val listLatLng: ArrayList<MyLatLng> = ArrayList()
+                DetourGoHomeManager.getsInstance().updateNoFlyZones(listBanAreas)
+                val startTime = System.currentTimeMillis()
 
-                  val path = DetourGoHomeManager.getsInstance().calculateDetourPath(listOf(startPoint,endPoint))
-                    val endTime = System.currentTimeMillis()
-                    val costTime = (endTime - startTime)
-                  Log.d(TAG, "结束 costTime =  $costTime")
-                    if (path == null || path.isEmpty()) {
-                        Log.d(TAG, "无可行路径")
-                        ToastUtils.showToast("无可行路径:耗时：$costTime")
-                    } else {
-                        Log.d(TAG, "原始路径:")
-                        flypathPoints.forEach {
-                            Log.d(TAG, "起点纬度: " + it.latitude + ", 经度: " + it.longitude)
-
-                        }
-                        Log.d(TAG, "最短绕飞路径:")
-                        Log.d(TAG, "起点纬度: " + startPoint.latitude + ", 经度: " + startPoint.longitude)
-                        Log.d(TAG, "终点纬度: " + endPoint.latitude + ", 经度: " + endPoint.longitude)
-                        for (point in path) {
-                            Log.d(TAG, "纬度: " + point.latitude + ", 经度: " + point.longitude)
-                        }
-                        ToastUtils.showToast("找到路径，耗时：$costTime")
-                        listLatLng.addAll(path)
-                    }
-
+                val path = DetourGoHomeManager.getsInstance()
+                    .calculateDetourPath(listOf(startPoint, endPoint))
+                val endTime = System.currentTimeMillis()
+                val costTime = (endTime - startTime)
+                Log.d(TAG, "costTime =  $costTime")
+                if (path == null || path.isEmpty()) {
+                    ToastUtils.showToast("no available path cost：$costTime")
+                } else {
+                    ToastUtils.showToast("find path cost：$costTime")
+                    listLatLng.addAll(path)
                 }
 
-                val distance = GeoUtils.haversine(startPoint.latitude, startPoint.longitude, endPoint.latitude, endPoint.longitude)
-                Log.d(TAG, "开始结束距离：" + distance)
+
+                val distance = GeoUtils.haversine(
+                    startPoint.latitude, startPoint.longitude, endPoint.latitude, endPoint.longitude
+                )
+                Log.d(TAG, "end distance：$distance")
                 if (listLatLng.isEmpty()) {
-                    Log.d(TAG, "未找到路径")
+                    Log.d(TAG, "can't find a path")
                 } else {
                     MainHandler.post({
                         drawPathOnAMap(aMap!!, listLatLng)
-                        ToastUtils.showToast("路径规划完成！");
-                        Log.d(TAG, "路径规划完成！");
+                        ToastUtils.showToast("Path generation finished！");
 
                     }, 0)
                 }
@@ -278,9 +244,6 @@ class MainActivity : ComponentActivity() {
         if (banJson.isNotEmpty()) {
             val listType = object : TypeToken<ArrayList<ArrayList<MyLatLng>>>() {}.getType()
             listBanAreas = gson.fromJson(banJson, listType)
-            Log.d(TAG, "initSpData listBanAreas = " + listBanAreas)
-            Log.d(TAG, "initSpData listBanAreas = " + listBanAreas.javaClass)
-            Log.d(TAG, "initSpData listBanAreas = " + listBanAreas.size)
             listBanAreas.forEach {
                 Log.d(TAG, "initSpData listBanAreas = " + it)
             }
@@ -292,70 +255,50 @@ class MainActivity : ComponentActivity() {
     private fun clearPoints() {
         startPoint = MyLatLng(0.0, 0.0)
         endPoint = MyLatLng(0.0, 0.0)
-        banPointList.clear()
+        noFlyZoneList.clear()
     }
 
 
     private fun initMap() {
         if (aMap == null) {
             aMap = mapView.map
-            // 地图UI相关设置
-            aMap?.uiSettings?.isZoomControlsEnabled = true // 显示缩放按钮
-            aMap?.uiSettings?.isMyLocationButtonEnabled = true // 显示定位按钮
-            aMap?.isMyLocationEnabled = true // 开启定位图层
-            // 设置初始定位和缩放级别
+            aMap?.uiSettings?.isZoomControlsEnabled = true
+            aMap?.uiSettings?.isMyLocationButtonEnabled = true
+            aMap?.isMyLocationEnabled = true
             val latLng = LatLng(36.09406114093818, 120.38552731431761)
-
-            // 设置初始摄像头位置
+            // init camera position
             val cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, 14f)
             aMap?.moveCamera(cameraUpdate)
 
-            // 设置地图点击事件监听器
             aMap?.setOnMapClickListener { latLng ->
                 currentClickedPoint = latLng
                 //", "", "", "")
-                if (selectedType == "电子围栏") {
-                    //电子围栏
+                if (selectedType == MapMode.FENCE) {
                     fenceList.add(toMyLatLon(latLng))
-                    // 在点击的地方添加 Marker
-                    val markerOptions = MarkerOptions()
-                        .position(latLng)  // 获取点击的位置
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))  // 设置标记图标（可自定义）
-                    aMap?.addMarker(markerOptions)  // 将标记添加到地图上
+                    val markerOptions = MarkerOptions().position(latLng)
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
+                    aMap?.addMarker(markerOptions)
                     return@setOnMapClickListener
-                } else if (selectedType == "禁飞区") {
-                    banPointList.add(toMyLatLon(latLng))
-                    val markerOptions = MarkerOptions()
-                        .position(latLng)  // 获取点击的位置
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))  // 设置标记图标（可自定义）
-                    aMap?.addMarker(markerOptions)  // 将标记添加到地图上
+                } else if (selectedType == MapMode.NOFLYZONE) {
+                    noFlyZoneList.add(toMyLatLon(latLng))
+                    val markerOptions = MarkerOptions().position(latLng)
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
+                    aMap?.addMarker(markerOptions)
                     return@setOnMapClickListener
-                } else if (selectedType == "起始点") {
-                    //返航点
+                } else if (selectedType == MapMode.STARTPOINT) {
                     startMarker?.remove()
                     startPoint = toMyLatLon(latLng)
-                    Log.d(
-                        TAG,
-                        "DDDDDDDDDDDDDDDDDDDDD------->起始点:${latLng.latitude}---${latLng.longitude}"
-                    )
-                    val markerOptions = MarkerOptions()
-                        .position(latLng)  // 获取点击的位置
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE))  // 设置标记图标（可自定义）
-                    startMarker = aMap?.addMarker(markerOptions)  // 将标记添加到地图上
+                    val markerOptions = MarkerOptions().position(latLng)
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE))
+                    startMarker = aMap?.addMarker(markerOptions)
                     isPointStartStatus = false
                     return@setOnMapClickListener
-                } else if (selectedType == "终点") {
-                    //终点
+                } else if (selectedType == MapMode.ENDPOINT) {
                     endMarker?.remove()
                     endPoint = toMyLatLon(latLng)
-                    Log.d(
-                        TAG,
-                        "DDDDDDDDDDDDDDDDDDDDD------->终点:${latLng.latitude}---${latLng.longitude}"
-                    )
-                    val markerOptions = MarkerOptions()
-                        .position(latLng)  // 获取点击的位置
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))  // 设置标记图标（可自定义）
-                    endMarker = aMap?.addMarker(markerOptions)  // 将标记添加到地图上
+                    val markerOptions = MarkerOptions().position(latLng)
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))
+                    endMarker = aMap?.addMarker(markerOptions)
                     isPointEndStatus = false
                     var isLineIntersectPolygon = false
                     listBanAreas.forEach {
@@ -363,12 +306,8 @@ class MainActivity : ComponentActivity() {
                         if (testResult) {
                             isLineIntersectPolygon = true;
                         }
-                        Log.d(
-                            TAG,
-                            "isLineIntersectPolygon testResult = " + testResult + ", it = " + it
-                        )
                     }
-                    ToastUtils.showToast(if (isLineIntersectPolygon) "经过禁飞区,危险！！" else "路径安全，一路平安！！")
+                    ToastUtils.showToast(if (isLineIntersectPolygon) "Across NoFlyZones！！" else "You are safe")
                     drawPathOnAMap(
                         aMap!!,
                         arrayListOf(startPoint, endPoint),
@@ -379,7 +318,7 @@ class MainActivity : ComponentActivity() {
             }
             drawFencePolygon(fenceList)
             listBanAreas.forEach {
-                Log.d(TAG, "draw listBanAreas = " + it)
+                Log.d(TAG, "draw listBanAreas = $it")
                 drawBanPolygon(it)
 
             }
@@ -387,7 +326,6 @@ class MainActivity : ComponentActivity() {
 
     }
 
-    // 生命周期方法同步，重要！
     override fun onResume() {
         super.onResume()
         mapView.onResume()
@@ -409,14 +347,10 @@ class MainActivity : ComponentActivity() {
     }
 
 
-    /**
-     * 检查并申请所有权限
-     */
     private fun checkAndRequestPermissions() {
         for (eachPermission in PermissionConstance.REQUIRED_PERMISSION_LIST) {
             if (ContextCompat.checkSelfPermission(
-                    this,
-                    eachPermission
+                    this, eachPermission
                 ) != PackageManager.PERMISSION_GRANTED
             ) {
                 missingPermission.add(eachPermission)
@@ -434,13 +368,8 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /**
-     * 权限回调
-     */
     override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
+        requestCode: Int, permissions: Array<String>, grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         // Check for granted permission and remove from missing list
@@ -449,11 +378,8 @@ class MainActivity : ComponentActivity() {
                 if (grantResults[i] == PackageManager.PERMISSION_GRANTED) {
                     missingPermission.remove(permissions[i])
                 } else if (grantResults[i] == PackageManager.PERMISSION_DENIED) {
-                    //在用户已经拒绝授权的情况下，如果shouldShowRequestPermissionRationale返回false则
-                    // 可以推断出用户选择了“不在提示”选项，在这种情况下需要引导用户至设置页手动授权
                     if (!ActivityCompat.shouldShowRequestPermissionRationale(
-                            this@MainActivity,
-                            permissions[i]!!
+                            this@MainActivity, permissions[i]!!
                         )
                     ) {
                         Log.d(TAG, "permission error")
@@ -468,60 +394,37 @@ class MainActivity : ComponentActivity() {
     private fun drawBanPolygon(points: MutableList<MyLatLng>) {
         Log.d(TAG, "drawBanPolygon " + points.joinToString())
         val newPoints = points.map { toLatLon(it) }
-        val polygonOptions = PolygonOptions()
-            .addAll(newPoints)
-            .fillColor(Color.argb(76, 255, 0, 0))
-            .strokeWidth(2f)
+        val polygonOptions =
+            PolygonOptions().addAll(newPoints).fillColor(Color.argb(76, 255, 0, 0)).strokeWidth(2f)
         aMap?.addPolygon(polygonOptions)
     }
 
     private fun drawFencePolygon(points: ArrayList<MyLatLng>) {
         Log.d(TAG, "drawFencePolygon " + points.joinToString())
         val newPoints = points.map { toLatLon(it) }
-        val polygonOptions = PolygonOptions()
-            .addAll(newPoints)
-            .fillColor(Color.argb(30, 0, 0, 255))
-            .strokeWidth(2f)
+        val polygonOptions =
+            PolygonOptions().addAll(newPoints).fillColor(Color.argb(30, 0, 0, 255)).strokeWidth(2f)
         aMap?.addPolygon(polygonOptions)
     }
 
-
-    /**
-     * 在高德地图上绘制路径关键点的折线
-     * @param aMap 高德地图实例
-     * @param keyPoints 路径关键点列表（PathUtil.LatLng）
-     * @param color 折线颜色（ARGB格式，例如0xFF0000FF为蓝色）
-     * @param width 折线宽度（单位：像素）
-     */
     fun drawPathOnAMap(
-        aMap: AMap,
-        keyPoints: List<MyLatLng>,
-        color: Int = 0xFF0000FF.toInt(), // 默认蓝色
-        width: Float = 8f // 默认宽度5像素
+        aMap: AMap, keyPoints: List<MyLatLng>, color: Int = 0xFF0000FF.toInt(),
+        width: Float = 8f
     ) {
         if (keyPoints.isEmpty()) {
-            Log.d(TAG, "DDDDDDDDDDDDD------>关键点列表为空，无法绘制路径")
+            Log.d(TAG, "drawPathOnAMap list is empty")
             return
         }
 
         mPathPolyline?.remove()
-        // 将 PathUtil.LatLng 转换为 AMapLatLng
         val aMapPoints = keyPoints.map { LatLng(it.latitude, it.longitude) }
-
-        // 打印路径信息
-        Log.d(TAG, "DDDDDDDDDDDDD---->aMapPoints-size:${aMapPoints.size}")
         keyPoints.forEach {
             Log.d(TAG, "Lat: ${it.latitude}, Lng: ${it.longitude}")
         }
-        // 在高德地图上绘制折线
         mPathPolyline = aMap.addPolyline(
-            PolylineOptions()
-                .addAll(aMapPoints) // 添加所有关键点
-                .color(color) // 设置折线颜色
-                .width(width)       // 设置折线宽度
-
+            PolylineOptions().addAll(aMapPoints) //
+                .color(color)
+                .width(width)
         )
     }
-
-
 }
