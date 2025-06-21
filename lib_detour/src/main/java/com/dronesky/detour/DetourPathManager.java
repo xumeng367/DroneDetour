@@ -10,21 +10,21 @@ import java.util.List;
 /**
  * 避障绕飞管理
  */
-public class DetourGoHomeManager {
+public class DetourPathManager {
     private static final String TAG = "DetourGoHomeManager";
     public static final boolean ENABLE = true;
-    private static final DetourGoHomeManager sInstance = new DetourGoHomeManager();
+    private static final DetourPathManager sInstance = new DetourPathManager();
     private final List<Polygon> mNonFlyZones = new ArrayList<>();
     private Polygon mGeoFencePolygon;
     private boolean mIsDetouringGoHome = false;
     private boolean mIsDetouringWaypoint = false;//是否航线绕飞
     private int mDetouringWaypointSize = 0;//绕飞点
 
-    private DetourGoHomeManager() {
+    private DetourPathManager() {
 
     }
 
-    public static DetourGoHomeManager getsInstance() {
+    public static DetourPathManager getsInstance() {
         return sInstance;
     }
 

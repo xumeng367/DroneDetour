@@ -76,7 +76,7 @@ public class GraphUtils {
     private static List<MyLatLng> calculateShortestPath(MyLatLng start, MyLatLng end, List<Polygon> noFlyZones, boolean isCrossOutSideFence) {
         Graph<MyLatLng, DefaultWeightedEdge> graph = new SimpleWeightedGraph<>(DefaultWeightedEdge.class);
         List<MyLatLng> validPoints = KeyPointExtractor.extractKeyPoints(start, end, noFlyZones, isCrossOutSideFence ? 0 : SAFETY_DISTANCE_METERS);
-        Polygon geoFencePolygon = DetourGoHomeManager.getsInstance().getGeoFencePolygon();
+        Polygon geoFencePolygon = DetourPathManager.getsInstance().getGeoFencePolygon();
         List<MyLatLng> geoFencePoint = geoFencePolygon != null ? KeyPointExtractor.extractKeyPoints(start, end, Collections.singletonList(geoFencePolygon), 0) : new ArrayList<>();
         Log.d(TAG, "calculateShortestPath 生成禁飞区关键点的数量：" + validPoints.size());
         Log.d(TAG, "calculateShortestPath 生成围栏关键点的数量" + geoFencePoint.size());

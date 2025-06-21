@@ -10,7 +10,7 @@ import android.location.Location;
 public class LocationUtils {
 
     /**
-     * 获取两个点之间的距离
+     * Calculate the distance between two points
      *
      * @param lon1
      * @param lat1
@@ -26,7 +26,7 @@ public class LocationUtils {
 
 
     /**
-     * 计算两个经纬度的方位
+     * Calculate the direction between two latitude and longitude points
      *
      * @param lat1
      * @param lon1

@@ -71,7 +71,7 @@ public class ClosestNoFlyZoneDetector {
     }
 
     /**
-     * 距离围栏最近的距离
+     * get min distance from safe fence
      */
     public static double getDistanceWithSafeFenceWhenFlying(MyLatLng dronePos, double headingDegrees, Polygon safeFence) {
         if (safeFence == null || safeFence.isEmpty()) {
@@ -100,8 +100,6 @@ public class ClosestNoFlyZoneDetector {
                     distanceToFence = dist;
                 }
             }
-//            Log.d("xss", "getDistanceWithSafeFenceWhenFlying: coords = end");
-
         }
         return distanceToFence;
     }

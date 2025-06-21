@@ -23,7 +23,7 @@ import com.amap.api.maps.model.MarkerOptions
 import com.amap.api.maps.model.PolygonOptions
 import com.amap.api.maps.model.Polyline
 import com.amap.api.maps.model.PolylineOptions
-import com.dronesky.detour.DetourGoHomeManager
+import com.dronesky.detour.DetourPathManager
 import com.dronesky.detour.GeoUtils
 import com.dronesky.detour.MapUtils
 import com.dronesky.detour.MyLatLng
@@ -187,10 +187,10 @@ class MainActivity : ComponentActivity() {
 
             Thread {
                 val listLatLng: ArrayList<MyLatLng> = ArrayList()
-                DetourGoHomeManager.getsInstance().updateNoFlyZones(listBanAreas)
+                DetourPathManager.getsInstance().updateNoFlyZones(listBanAreas)
                 val startTime = System.currentTimeMillis()
 
-                val path = DetourGoHomeManager.getsInstance()
+                val path = DetourPathManager.getsInstance()
                     .calculateDetourPath(listOf(startPoint, endPoint))
                 val endTime = System.currentTimeMillis()
                 val costTime = (endTime - startTime)

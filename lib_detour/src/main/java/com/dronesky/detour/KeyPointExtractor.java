@@ -47,7 +47,7 @@ public class KeyPointExtractor {
         List<MyLatLng> boundaryPoints = new ArrayList<>();
 //         Log.d(TAG,"getBufferedPolygonBoundaryPoints 原始polygon = " + polygon);
         // 计算缓冲区（20m）
-        double minDistance = GeoUtils.getShortestDistanceBetweenEdges(polygon, DetourGoHomeManager.getsInstance().getGeoFencePolygon());
+        double minDistance = GeoUtils.getShortestDistanceBetweenEdges(polygon, DetourPathManager.getsInstance().getGeoFencePolygon());
         double finalBufferMeters = minDistance > bufferMeters ? bufferMeters : (bufferMeters != 0 ? ((minDistance > 2) ? minDistance - 1 : 1) : 0);
         double bufferDegrees = metersToDegrees(finalBufferMeters);
         Geometry bufferedPolygon = polygon.buffer(bufferDegrees); // 扩展禁飞区
