@@ -11,7 +11,7 @@ import java.util.List;
 public class GeoUtils {
     private static final String TAG = "GeoUtils";
     private static final GeometryFactory geometryFactory = new GeometryFactory();
-    // 生成 Polygon（禁飞区）
+
     public static Polygon createPolygon(List<MyLatLng> coordinates) {
         Coordinate[] coords = new Coordinate[coordinates.size() + 1];
         for (int i = 0; i < coordinates.size(); i++) {
@@ -22,7 +22,7 @@ public class GeoUtils {
     }
 
     /**
-     * 起点、终点是否经过禁飞区
+     * if starting point and the ending point pass through the no-fly zone
      *
      * @param start
      * @param end
@@ -51,7 +51,6 @@ public class GeoUtils {
                     new Coordinate(start.latitude, start.longitude),
                     new Coordinate(end.latitude, end.longitude)
             });
-            Log.d(TAG, "Intersect 点 （ " + i + ", " + end + ")经过禁飞区");
             for (Polygon noFlyZone : noFlyZones) {
                 if (path.intersects(noFlyZone)) {
                     return true;
@@ -63,7 +62,7 @@ public class GeoUtils {
 
 
     /**
-     * 检查点是否在禁飞区内
+     * Check if the checkpoint is within the no-fly zone
      *
      * @param point
      * @param noFlyZones
@@ -85,15 +84,6 @@ public class GeoUtils {
         return polygon.contains(GeoUtils.createPoint(point.latitude, point.longitude));
     }
 
-
-    /**
-     * 检查从 start 到 end 的路径是否完全在安全区域 Polygon 内
-     *
-     * @param start
-     * @param end
-     * @param safeZone
-     * @return
-     */
     public static boolean isPathWithinSafeZone(MyLatLng start, MyLatLng end, Polygon safeZone) {
         if (safeZone == null) {
             return true;
@@ -103,7 +93,6 @@ public class GeoUtils {
 
         LineString pathLine = geometryFactory.createLineString(new Coordinate[]{coordA, coordB});
 
-        // 判断整条路径是否被安全区包含
         return safeZone.contains(pathLine);
     }
 
@@ -119,7 +108,7 @@ public class GeoUtils {
     }
 
 
-    // 计算两点之间的球面距离（哈弗辛公式）
+    // Calculate the spherical distance between two points (Haversine formula)
     public static double haversine(double lat1, double lon1, double lat2, double lon2) {
         double R = 6371000; // 地球半径 (米)
         double dLat = Math.toRadians(lat2 - lat1);
@@ -131,30 +120,26 @@ public class GeoUtils {
         return R * c;
     }
 
-    // 创建 JTS 点对象
     public static Point createPoint(double latitude, double longitude) {
         return geometryFactory.createPoint(new Coordinate(latitude, longitude));
     }
 
     public static double getShortestDistanceBetweenEdges(Polygon inner, Polygon outer) {
-        // 外壳的边界
         if (outer == null) {
             return 0;
         }
         Geometry shellA = inner.getExteriorRing();
         Geometry shellB = outer.getExteriorRing();
 
-        // 计算最近点
         Coordinate[] closestPoints = DistanceOp.nearestPoints(shellA, shellB);
 
         Coordinate firstCoordinate = closestPoints[0];
         Coordinate secondCoordinate = closestPoints[1];
-        // 打印点
-        Log.d(TAG, "getShortestDistanceBetweenEdges A边界点：" + firstCoordinate);
-        Log.d(TAG, "getShortestDistanceBetweenEdges B边界点：" + secondCoordinate);
+        Log.d(TAG, "getShortestDistanceBetweenEdges A：" + firstCoordinate);
+        Log.d(TAG, "getShortestDistanceBetweenEdges B：" + secondCoordinate);
 
         double distance = haversine(firstCoordinate.x, firstCoordinate.y, secondCoordinate.x, secondCoordinate.y);
-        Log.d(TAG, "getShortestDistanceBetweenEdges 最小距离：" + closestPoints[1]);
+        Log.d(TAG, "getShortestDistanceBetweenEdges min distance：" + closestPoints[1]);
         return distance;
     }
 }

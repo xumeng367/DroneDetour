@@ -29,7 +29,7 @@ public class GraphUtils {
                 MyLatLng start = waypoints.get(i);
                 MyLatLng end = waypoints.get(i + 1);
                 boolean intersectsNoFlyZone = GeoUtils.intersectsNoFlyZone(start, end, noFlyZones);
-                Log.d(TAG, "遍历" + i + ", intersectsNoFlyZone = " + intersectsNoFlyZone);
+                Log.d(TAG, "foreach " + i + ", intersectsNoFlyZone = " + intersectsNoFlyZone);
                 if (!intersectsNoFlyZone) {
                     if (!fullPath.isEmpty()) {
                         MyLatLng last = fullPath.get(fullPath.size() - 1);
@@ -42,21 +42,20 @@ public class GraphUtils {
                         fullPath.add(end);
                     }
 
-                    Log.d(TAG, "不经过禁飞区，进行下一轮遍历");
+                    Log.d(TAG, "Proceed to the next round of traversal without crossing the no-fly zone.");
                     continue;
                 }
                 long startTime = System.currentTimeMillis();
-                // 计算当前航段路径
+                // Calculate the current flight segment path
                 List<MyLatLng> segmentPath = calculateShortestPath(start, end, noFlyZones, isCrossOutSideFence);
                 long endTime = System.currentTimeMillis();
-                Log.d(TAG, "点" + i + "," + (i + 1) + "，生成路径耗时：" + (endTime - startTime));
+                Log.d(TAG, " point " + i + "," + (i + 1) + "，path generation cost：" + (endTime - startTime));
                 if (segmentPath == null) {
-                    Log.d(TAG, "找到失败：i=" + i + "，添加收尾");
+                    Log.d(TAG, "fail ：i=" + i );
                     return null;
                 } else {
-                    Log.d(TAG, "找到绕飞路径：size = " + segmentPath.size());
-                    Log.d(TAG, "找到绕飞路径：size " + segmentPath);
-                    // 添加路径点（避免重复添加起点）
+                    Log.d(TAG, "find path：size " + segmentPath);
+                    // Add path points (avoid adding the starting point repeatedly)
                     if (!fullPath.isEmpty()) {
                         segmentPath.remove(0);
                     }
@@ -68,7 +67,7 @@ public class GraphUtils {
             return fullPath;
         } catch (Throwable e) {
             e.printStackTrace();
-            Log.d(TAG, "寻找路径异常：" + e.getMessage());
+            Log.d(TAG, "find path error：" + e.getMessage());
         }
         return null;
     }
@@ -78,14 +77,14 @@ public class GraphUtils {
         List<MyLatLng> validPoints = KeyPointExtractor.extractKeyPoints(start, end, noFlyZones, isCrossOutSideFence ? 0 : SAFETY_DISTANCE_METERS);
         Polygon geoFencePolygon = DetourPathManager.getsInstance().getGeoFencePolygon();
         List<MyLatLng> geoFencePoint = geoFencePolygon != null ? KeyPointExtractor.extractKeyPoints(start, end, Collections.singletonList(geoFencePolygon), 0) : new ArrayList<>();
-        Log.d(TAG, "calculateShortestPath 生成禁飞区关键点的数量：" + validPoints.size());
-        Log.d(TAG, "calculateShortestPath 生成围栏关键点的数量" + geoFencePoint.size());
+        Log.d(TAG, "calculateShortestPath The number of key points for generating no-fly zones：" + validPoints.size());
+        Log.d(TAG, "calculateShortestPath Determine the number of key points for the fence construction" + geoFencePoint.size());
         if (!isCrossOutSideFence) {
             validPoints.addAll(geoFencePoint);
         }
-        Log.d(TAG, "calculateShortestPath 生成围栏关键点总的数量" + validPoints.size());
+        Log.d(TAG, "calculateShortestPath Determine the total number of key points for the fence construction " + validPoints.size());
 
-        // 仅在关键点间添加边
+        // Only add edges between the key points
         for (int i = 0; i < validPoints.size(); i++) {
             for (int j = i + 1; j < validPoints.size(); j++) {
                 MyLatLng p1 = validPoints.get(i);
@@ -107,7 +106,7 @@ public class GraphUtils {
             }
 
         }
-        // 3️⃣ 运行 A* 搜索
+        //run  A*  search
         AStarShortestPath<MyLatLng, DefaultWeightedEdge> aStar = new AStarShortestPath<>(graph, MyLatLng::distanceTo);
         try {
             GraphPath<MyLatLng, DefaultWeightedEdge> graphPath = aStar.getPath(start, end);
@@ -115,7 +114,7 @@ public class GraphUtils {
                 return aStar.getPath(start, end).getVertexList();
             }
         } catch (Throwable throwable) {
-            Log.d(TAG, " AStarShortestPath 寻找路径失败：" + throwable.getMessage());
+            Log.d(TAG, " AStarShortestPath find path failure：" + throwable.getMessage());
         }
         return null;
     }

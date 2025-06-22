@@ -8,17 +8,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 避障绕飞管理
+ * DetourPathManager
  */
 public class DetourPathManager {
-    private static final String TAG = "DetourGoHomeManager";
+    private static final String TAG = "DetourPathManager";
     public static final boolean ENABLE = true;
     private static final DetourPathManager sInstance = new DetourPathManager();
     private final List<Polygon> mNonFlyZones = new ArrayList<>();
     private Polygon mGeoFencePolygon;
     private boolean mIsDetouringGoHome = false;
-    private boolean mIsDetouringWaypoint = false;//是否航线绕飞
-    private int mDetouringWaypointSize = 0;//绕飞点
+    private boolean mIsDetouringWaypoint = false;
+    private int mDetouringWaypointSize = 0;
 
     private DetourPathManager() {
 
@@ -29,10 +29,8 @@ public class DetourPathManager {
     }
 
 
-
-
     /**
-     * 获取禁飞区
+     * Obtain a no-fly zone
      *
      * @return
      */
@@ -45,7 +43,7 @@ public class DetourPathManager {
     }
 
     /**
-     * 是否有禁飞区
+     * Is there a no-fly zone?
      *
      * @return
      */
@@ -55,22 +53,22 @@ public class DetourPathManager {
 
     public boolean isNeedDetourFlying(MyLatLng start, MyLatLng end) {
         if (!ENABLE) {
-            Log.d(TAG, "isNeedDetourFlying 未开启");
+            Log.d(TAG, "isNeedDetourFlying not enable");
             return false;
         }
         if (start.latitude == end.latitude && start.longitude == end.longitude) {
-            Log.d(TAG, "isNeedDetourFlying 开始和终点相同，不需要绕行");
+            Log.d(TAG, "isNeedDetourFlying The start and end points are the same, and there is no need for a detour.");
             return false;
         }
         boolean isCurrentInsideNoFlyZone = GeoUtils.isInsideNoFlyZone(start, getNonFlyZones());
         boolean isCurrentInsideFence = GeoUtils.isInsidePolygon(start, getGeoFencePolygon());
         if (isCurrentInsideNoFlyZone || !isCurrentInsideFence) {
-            Log.d(TAG, "isNeedDetourFlying 当前点是否在禁飞区：" + isCurrentInsideNoFlyZone + ", 是否在围栏内 = " + isCurrentInsideFence + " ，不需要绕行");
+            Log.d(TAG, "isNeedDetourFlying isCurrentInsideNoFlyZone：" + isCurrentInsideNoFlyZone + ", isCurrentInsideFence = " + isCurrentInsideFence);
             return false;
         }
         boolean isPathInGeoFence = GeoUtils.isPathWithinSafeZone(start, end, mGeoFencePolygon);
         boolean intersectsNoFlyZone = GeoUtils.intersectsNoFlyZone(start, end, mNonFlyZones);
-        Log.d(TAG, "isNeedDetourFlying 是否经过围栏外 = " + !isPathInGeoFence + ", 是否经过禁飞区 = " + intersectsNoFlyZone);
+        Log.d(TAG, "isNeedDetourFlying isPathInGeoFence = " + isPathInGeoFence + ", intersectsNoFlyZone = " + intersectsNoFlyZone);
         return intersectsNoFlyZone || !isPathInGeoFence;
     }
 
@@ -84,7 +82,7 @@ public class DetourPathManager {
 
     public List<MyLatLng> calculateDetourPath(List<MyLatLng> waypoints) {
         if (waypoints == null || waypoints.isEmpty()) {
-            Log.d(TAG, "calculateDetourPath 无有效点");
+            Log.d(TAG, "calculateDetourPath invalid");
             return null;
         }
         double directDistance = getDistance(waypoints);
@@ -96,46 +94,44 @@ public class DetourPathManager {
             long fenceStarTime = System.currentTimeMillis();
             List<Polygon> geoFences = new ArrayList<>();
             geoFences.add(mGeoFencePolygon);
-            Log.d(TAG, "calculateDetourPath 航线经过安全围栏外，先进行绕飞处理");
+            Log.d(TAG, "calculateDetourPath After passing beyond the safety fence, the flight will first undergo a circling maneuver.");
             detourFencePath = GraphUtils.findMultiSegmentPath(waypoints, geoFences, true);
             long fenceEndTime = System.currentTimeMillis();
-            Log.d(TAG, "calculateDetourPath 围栏外绕飞路线 耗时：" + (fenceEndTime - fenceStarTime));
+            Log.d(TAG, "calculateDetourPath The flight path around the fence and the duration of it：" + (fenceEndTime - fenceStarTime));
             if (detourFencePath == null) {
-                Log.d(TAG, "calculateDetourPath 围栏外的情况绕飞失败 ");
+                Log.d(TAG, "calculateDetourPath The situation outside the fence failed to be bypassed. ");
                 return null;
             } else {
-                Log.d(TAG, "calculateDetourPath 围栏外 绕飞路线：" + detourFencePath.size() + ",耗时：" + (fenceEndTime - fenceStarTime));
-                Log.d(TAG, "calculateDetourPath 围栏外 绕飞路线：" + detourFencePath);
-                Log.d(TAG, "calculateDetourPath 围栏外 直飞距离：" + directDistance + ", 绕飞后距离：" + getDistance(detourFencePath));
+                Log.d(TAG, "calculateDetourPath Outside the fence, the flight path around the perimeter size：" + detourFencePath.size() + ",cost：" + (fenceEndTime - fenceStarTime));
+                Log.d(TAG, "calculateDetourPath Outside the fence, the flight path around the perimeter：" + detourFencePath);
+                Log.d(TAG, "calculateDetourPath Distance from the fence to the direct flight point：" + directDistance + ", The distance after circling away：" + getDistance(detourFencePath));
             }
         } else {
             detourFencePath = waypoints;
         }
 
         long noFlyZoneStartTime = System.currentTimeMillis();
-        Log.d(TAG, "calculateDetourPath 开始计算绕飞路线");
+        Log.d(TAG, "calculateDetourPath Start calculating the circling route");
 
         List<MyLatLng> path = GraphUtils.findMultiSegmentPath(detourFencePath, mNonFlyZones, false);
         long noFlyZoneEndTime = System.currentTimeMillis();
         if (path == null || path.isEmpty()) {
-            Log.d(TAG, "calculateDetourPath 禁飞区 fail");
+            Log.d(TAG, "calculateDetourPath fail");
             return null;
         }
-        Log.d(TAG, "calculateDetourPath 禁飞区 绕飞路线：" + path.size() + ",耗时：" + (noFlyZoneEndTime - noFlyZoneStartTime));
-        Log.d(TAG, "calculateDetourPath 禁飞区 绕飞路线：" + path);
-        Log.d(TAG, "calculateDetourPath 禁飞区 直飞距离：" + directDistance + ", 绕飞后距离：" + getDistance(path));
+        Log.d(TAG, "calculateDetourPath No-fly zone  -  Flight avoidance route size：" + path.size() + ", cost：" + (noFlyZoneEndTime - noFlyZoneStartTime));
+        Log.d(TAG, "calculateDetourPath No-fly zone  -  Flight avoidance route：" + path);
+        Log.d(TAG, "calculateDetourPath No-fly zone  Direct flight distance：" + directDistance + ", The distance after detour：" + getDistance(path));
 
-        Log.d(TAG, "calculateDetourPath 最终绕飞路线：" + path.size());
-        Log.d(TAG, "calculateDetourPath 最终绕飞路线：" + path);
+        Log.d(TAG, "calculateDetourPath Final route size：" + path.size());
+        Log.d(TAG, "calculateDetourPath Final route size：" + path);
 
         boolean isCrossOutSideFenceWithPath = GeoUtils.isPathWithinSafeZone(path, mGeoFencePolygon);
         boolean intersectsNoFlyZoneWithPath = GeoUtils.intersectsNoFlyZone(path, mNonFlyZones);
-        Log.d(TAG, "calculateDetourPath 最终绕飞路线 是否经过围栏外：" + isCrossOutSideFenceWithPath + ", 是否经过禁飞区：" + intersectsNoFlyZoneWithPath);
+        Log.d(TAG, "calculateDetourPath isCrossOutSideFenceWithPath：" + isCrossOutSideFenceWithPath + ", intersectsNoFlyZoneWithPath：" + intersectsNoFlyZoneWithPath);
         if (isCrossOutSideFenceWithPath || intersectsNoFlyZoneWithPath) {
-            Log.d(TAG, "calculateDetourPath 进行递归");
             return calculateDetourPath(path);
         }
-        Log.d(TAG, "calculateDetourPath 路线安全，返回");
         return path;
     }
 
@@ -152,21 +148,13 @@ public class DetourPathManager {
         return distance;
     }
 
-
     public void updateNoFlyZones(List<List<MyLatLng>> noFlyZones) {
         mNonFlyZones.clear();
-        Log.d(TAG, "updateNoFlyZones: noFlyZones = " + noFlyZones.size());
-        for (int i = 0 ; i < noFlyZones.size(); i++) {
+        for (int i = 0; i < noFlyZones.size(); i++) {
             List<MyLatLng> noFlyZone = noFlyZones.get(i);
-            Log.d(TAG, "updateNoFlyZones: noFlyZone = " + noFlyZone.size());
-            Log.d(TAG, "updateNoFlyZones: noFlyZone22 = " + noFlyZone);
-                Log.d(TAG, "updateNoFlyZones: 添加成功 = " + noFlyZone);
-                mNonFlyZones.add(GeoUtils.createPolygon(noFlyZone));
+            mNonFlyZones.add(GeoUtils.createPolygon(noFlyZone));
         }
     }
-    /**
-     * 获取机场禁飞区
-     * */
 
     public void reset() {
         Log.d(TAG, "release");

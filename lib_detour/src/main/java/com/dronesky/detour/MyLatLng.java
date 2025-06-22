@@ -2,7 +2,6 @@ package com.dronesky.detour;
 
 import java.util.Objects;
 
-// 经纬度点
 public class MyLatLng {
     public double latitude;
     public double longitude;
@@ -55,7 +54,7 @@ public class MyLatLng {
                         Math.sin(dlon / 2) * Math.sin(dlon / 2);
 
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c; // 结果以米为单位
+        return R * c; // m
     }
 
 
