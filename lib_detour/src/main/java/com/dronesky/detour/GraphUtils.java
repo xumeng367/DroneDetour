@@ -19,7 +19,7 @@ public class GraphUtils {
     private static final String TAG = "GraphUtils";
 
     /**
-     * 计算完整航线路径（多段绕飞）
+     * Calculate the complete flight path (multiple detours)
      */
     public static List<MyLatLng> findMultiSegmentPath(List<MyLatLng> waypoints, List<Polygon> noFlyZones, boolean isCrossOutSideFence) {
         try {

@@ -43,7 +43,7 @@ public class LocationUtils {
         double y = Math.sin(longDiff) * Math.cos(latitude2);
         double x = Math.cos(latitude1) * Math.sin(latitude2) - Math.sin(latitude1) * Math.cos(latitude2) * Math.cos(longDiff);
         double deg = (Math.toDegrees(Math.atan2(y, x)) + 360) % 360;
-        // 控制区间在 [-180, 180]
+        // [-180, 180]
         if (deg > 180) {
             deg = deg - 360;
         } else {

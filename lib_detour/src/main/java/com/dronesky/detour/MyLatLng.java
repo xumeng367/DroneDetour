@@ -43,7 +43,7 @@ public class MyLatLng {
 //        double latDiff = this.latitude - other.latitude;
 //        double lonDiff = this.longitude - other.longitude;
 //        return Math.sqrt(latDiff * latDiff + lonDiff * lonDiff);
-        final double R = 6371e3; // 地球半径（米）
+        final double R = 6371e3; //Earth radius (meters)
         double lat1 = Math.toRadians(this.latitude);
         double lat2 = Math.toRadians(other.latitude);
         double dlat = Math.toRadians(other.latitude - this.latitude);
@@ -54,7 +54,7 @@ public class MyLatLng {
                         Math.sin(dlon / 2) * Math.sin(dlon / 2);
 
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c; // m
+        return R * c; // meters
     }
 
 

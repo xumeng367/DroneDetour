@@ -152,7 +152,11 @@ public class DetourPathManager {
         mNonFlyZones.clear();
         for (int i = 0; i < noFlyZones.size(); i++) {
             List<MyLatLng> noFlyZone = noFlyZones.get(i);
-            mNonFlyZones.add(GeoUtils.createPolygon(noFlyZone));
+            if (noFlyZone.size() < 3) {
+                Log.d(TAG, "updateNoFlyZones: invalid noFlyZones:" + noFlyZone);
+            } else {
+                mNonFlyZones.add(GeoUtils.createPolygon(noFlyZone));
+            }
         }
     }
 

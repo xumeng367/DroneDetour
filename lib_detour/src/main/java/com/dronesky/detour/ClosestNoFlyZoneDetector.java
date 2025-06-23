@@ -5,12 +5,12 @@ import org.locationtech.jts.geom.*;
 import java.util.List;
 
 public class ClosestNoFlyZoneDetector {
-    private static final double SEARCH_DISTANCE = 5000.0; // 向前延伸5km用于检测
+    private static final double SEARCH_DISTANCE = 5000.0; // Extend 5 kilometers forward to detect and locate the nearest intersecting no-fly zone in the current flight path direction.
     private static final GeometryFactory geometryFactory = new GeometryFactory();
     private static double minDistance;
 
     /**
-     * 查找当前航线方向最近相交的禁飞区
+     * Search for the nearest prohibited area that intersects with the current flight path direction.
      */
     public static Polygon findClosestNoFlyZoneAlongPath(MyLatLng dronePos, double headingDegrees, List<Polygon> noFlyZones) {
         if (noFlyZones == null || noFlyZones.isEmpty()) {

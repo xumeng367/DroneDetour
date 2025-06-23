@@ -12,18 +12,17 @@ import java.util.List;
 public class KeyPointGraphBuilder {
     public SimpleWeightedGraph<MyLatLng, DefaultWeightedEdge> buildGraph(List<MyLatLng> keyPoints, List<Polygon> noFlyZones) {
         SimpleWeightedGraph<MyLatLng, DefaultWeightedEdge> graph = new SimpleWeightedGraph<>(DefaultWeightedEdge.class);
-        // 添加关键点
+        //add key point
         for (MyLatLng point : keyPoints) {
             graph.addVertex(point);
         }
 
-        // 仅在关键点间添加边
+        //Only add edges between the key points
         for (int i = 0; i < keyPoints.size(); i++) {
             for (int j = i + 1; j < keyPoints.size(); j++) {
                 MyLatLng p1 = keyPoints.get(i);
                 MyLatLng p2 = keyPoints.get(j);
-
-                // 确保路径不过禁飞区
+                // Ensure that the path does not pass through the no-fly zone.
                 if (!intersectsNoFlyZone(p1, p2, noFlyZones)) {
                     DefaultWeightedEdge edge = graph.addEdge(p1, p2);
                     if (edge != null) {
