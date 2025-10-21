@@ -56,8 +56,21 @@ MyLatLng endPoint = new MyLatLng(36.1234132, 120.333345);
 //3. get the detour path
 List<MyLatLng> detourPath = DetourPathManager.getsInstance().calculateDetourPath(List.of(startPoint, endPoint));
 ```
-
 ---
+
+## 🎯 Drone Detour Demo
+
+### 📱 Screenshot
+Default demo screen
+![App UI](img/0.png)
+
+Across noFlyZones
+
+![App UI](img/1.png)
+
+Detour path
+
+![App UI](img/2.png)
 
 ## 🚀 Future Roadmap
 - [ ] Machine Learning-based path optimization
