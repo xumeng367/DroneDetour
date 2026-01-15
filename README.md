@@ -61,6 +61,9 @@ List<MyLatLng> detourPath = DetourPathManager.getsInstance().calculateDetourPath
 ## 🎯 Drone Detour Demo
 
 ### 📱 Screenshot
+Operation demo video
+![App UI](img/demo.mp4)
+
 Default demo screen
 ![App UI](img/0.png)
 
