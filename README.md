@@ -62,7 +62,7 @@ List<MyLatLng> detourPath = DetourPathManager.getsInstance().calculateDetourPath
 
 ### 📱 Screenshot
 Operation demo video
-![App UI](img/demo.mp4)
+![App UI](img/demo.gif)
 
 Default demo screen
 ![App UI](img/0.png)
