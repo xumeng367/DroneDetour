@@ -23,8 +23,10 @@ import com.amap.api.maps.model.MarkerOptions
 import com.amap.api.maps.model.PolygonOptions
 import com.amap.api.maps.model.Polyline
 import com.amap.api.maps.model.PolylineOptions
+import com.dronesky.detour.AlgorithmType
 import com.dronesky.detour.DetourPathManager
 import com.dronesky.detour.GeoUtils
+import com.dronesky.detour.GraphUtils
 import com.dronesky.detour.MapUtils
 import com.dronesky.detour.MyLatLng
 import com.dronesky.dronedetour.utils.MainHandler
@@ -70,6 +72,7 @@ class MainActivity : ComponentActivity() {
     private var isPointStartStatus = false;
     private var isPointEndStatus = false;
     private lateinit var et_type: Spinner
+    private lateinit var algorithms_type: Spinner
     private var selectedType = MapMode.FENCE
     private var startMarker: Marker? = null
     private var endMarker: Marker? = null
@@ -100,6 +103,7 @@ class MainActivity : ComponentActivity() {
         btn_cancel_set_point = findViewById(R.id.btn_cancel_set_point)
         btn_set_fence_point = findViewById(R.id.btn_set_fence_point)
         et_type = findViewById(R.id.spinner_type)
+        algorithms_type = findViewById(R.id.algorithms_type)
         //modeList
         val types = arrayOf(
 //            MapMode.FENCE.name,
@@ -120,6 +124,29 @@ class MainActivity : ComponentActivity() {
             override fun onNothingSelected(parent: AdapterView<*>) {
             }
         }
+
+
+        val algorithmsName = arrayOf(
+            AlgorithmType.AStarShortestPath,
+            AlgorithmType.BellmanFordShortestPath,
+            AlgorithmType.BidirectionalDijkstraShortestPath,
+            AlgorithmType.DijkstraShortestPath,
+            AlgorithmType.JohnsonShortestPaths
+        )
+        val algorithmsAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, algorithmsName)
+        algorithmsAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        algorithms_type.adapter = algorithmsAdapter
+        algorithms_type.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parent: AdapterView<*>, view: View, position: Int, id: Long
+            ) {
+                GraphUtils.setAlgorithmType(algorithmsName[position])
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>) {
+            }
+        }
+
 
 
         btn_cancel_set_point.setOnClickListener {

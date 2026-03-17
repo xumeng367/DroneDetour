@@ -99,8 +99,15 @@
             android:layout_width="wrap_content"
             android:layout_height="45dp"
             android:layout_gravity="center"
-            android:layout_margin="16dp"
             android:gravity="center"
+            android:spinnerMode="dropdown" />
+
+        <Spinner
+            android:id="@+id/algorithms_type"
+            android:layout_width="wrap_content"
+            android:layout_height="45dp"
+            android:layout_gravity="center"
+            android:gravity="start"
             android:spinnerMode="dropdown" />
 
     </LinearLayout>
