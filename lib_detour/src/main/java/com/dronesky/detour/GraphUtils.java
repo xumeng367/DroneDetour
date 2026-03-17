@@ -119,30 +119,30 @@ public class GraphUtils {
 
         }
         //run  A*  search
-        ShortestPathAlgorithm<MyLatLng, DefaultWeightedEdge> aStar = null;
+        ShortestPathAlgorithm<MyLatLng, DefaultWeightedEdge> shortestPathAlgorithm = null;
         try {
             if (SAlgorithmType == AlgorithmType.AStarShortestPath) {
-                aStar = new AStarShortestPath<>(graph, MyLatLng::distanceTo);
+                shortestPathAlgorithm = new AStarShortestPath<>(graph, MyLatLng::distanceTo);
             } else if (SAlgorithmType == AlgorithmType.BellmanFordShortestPath) {
-                aStar = new BellmanFordShortestPath<>(graph);
+                shortestPathAlgorithm = new BellmanFordShortestPath<>(graph);
             } else if (SAlgorithmType == AlgorithmType.BidirectionalDijkstraShortestPath) {
-                aStar = new BidirectionalDijkstraShortestPath<>(graph);
+                shortestPathAlgorithm = new BidirectionalDijkstraShortestPath<>(graph);
             } else if (SAlgorithmType == AlgorithmType.DijkstraShortestPath) {
-                aStar = new DijkstraShortestPath<>(graph);
+                shortestPathAlgorithm = new DijkstraShortestPath<>(graph);
             } else if (SAlgorithmType == AlgorithmType.JohnsonShortestPaths) {
-                aStar = new JohnsonShortestPaths<>(graph);
+                shortestPathAlgorithm = new JohnsonShortestPaths<>(graph);
             }
-            if (aStar == null) {
+            if (shortestPathAlgorithm == null) {
                 return null;
             }
-            Log.d(TAG, "calculateShortestPath: SAlgorithmType = " + SAlgorithmType + ", aStar = " + aStar);
+            Log.d(TAG, "calculateShortestPath: SAlgorithmType = " + SAlgorithmType + ", shortestPathAlgorithm = " + shortestPathAlgorithm);
 
-            GraphPath<MyLatLng, DefaultWeightedEdge> graphPath = aStar.getPath(start, end);
+            GraphPath<MyLatLng, DefaultWeightedEdge> graphPath = shortestPathAlgorithm.getPath(start, end);
             if (graphPath != null) {
-                return aStar.getPath(start, end).getVertexList();
+                return shortestPathAlgorithm.getPath(start, end).getVertexList();
             }
         } catch (Throwable throwable) {
-            Log.d(TAG, " AStarShortestPath find path failure：" + throwable.getMessage());
+            Log.d(TAG, " shortestPathAlgorithmShortestPath find path failure：" + throwable.getMessage());
         }
         return null;
     }
